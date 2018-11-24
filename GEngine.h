@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef _WIN32
+
 #include <Windows.h>
 #include <iostream>
 #include <fcntl.h>
@@ -9,45 +11,44 @@
 namespace GColors {
 	namespace Background {
 		unsigned short int BLACK = 0x0000,
-			DARK_BLUE = 0x0010,
-			DARK_GREEN = 0x0020,
-			DARK_CYAN = 0x0030,
-			DARK_RED = 0x0040,
+			DARK_BLUE    = 0x0010,
+			DARK_GREEN   = 0x0020,
+			DARK_CYAN    = 0x0030,
+			DARK_RED     = 0x0040,
 			DARK_MAGENTA = 0x0050,
-			DARK_YELLOW = 0x0060,
-			GREY = 0x0070,
-			DARK_GREY = 0x0080,
-			BLUE = 0x0090,
-			GREEN = 0x00A0,
-			CYAN = 0x00B0,
-			RED = 0x00C0,
-			MAGENTA = 0x00D0,
-			YELLOW = 0x00E0,
-			WHITE = 0x00F0;
+			DARK_YELLOW  = 0x0060,
+			GREY         = 0x0070,
+			DARK_GREY    = 0x0080,
+			BLUE         = 0x0090,
+			GREEN        = 0x00A0,
+			CYAN         = 0x00B0,
+			RED          = 0x00C0,
+			MAGENTA      = 0x00D0,
+			YELLOW       = 0x00E0,
+			WHITE        = 0x00F0;
 	};
 
 	namespace Foreground {
 		unsigned short int BLACK = 0x0000,
-			DARK_BLUE = 0x0001,
-			DARK_GREEN = 0x0002,
-			DARK_CYAN = 0x0003,
-			DARK_RED = 0x0004,
+			DARK_BLUE    = 0x0001,
+			DARK_GREEN   = 0x0002,
+			DARK_CYAN    = 0x0003,
+			DARK_RED     = 0x0004,
 			DARK_MAGENTA = 0x0005,
-			DARK_YELLOW = 0x0006,
-			GREY = 0x0007,
-			DARK_GREY = 0x0008,
-			BLUE = 0x0009,
-			GREEN = 0x000A,
-			CYAN = 0x000B,
-			RED = 0x000C,
-			MAGENTA = 0x000D,
-			YELLOW = 0x000E,
-			WHITE = 0x000F;
+			DARK_YELLOW  = 0x0006,
+			GREY         = 0x0007,
+			DARK_GREY    = 0x0008,
+			BLUE         = 0x0009,
+			GREEN        = 0x000A,
+			CYAN         = 0x000B,
+			RED          = 0x000C,
+			MAGENTA      = 0x000D,
+			YELLOW       = 0x000E,
+			WHITE        = 0x000F;
 	};
 
 	namespace Both {
-		unsigned short int
-			BLACK[2]        = { 0x0000, 0x0000 },
+		unsigned short int BLACK[2] = { 0x0000, 0x0000 },
 			DARK_BLUE[2]    = { 0x0001, 0x0010 },
 			DARK_GREEN[2]   = { 0x0002, 0x0020 },
 			DARK_CYAN[2]    = { 0x0003, 0x0030 },
@@ -67,10 +68,10 @@ namespace GColors {
 };
 
 namespace GPixelTypes {
-	wchar_t PIXEL_SOLID[1] = { 0x2588 },
+	wchar_t PIXEL_SOLID[1]         = { 0x2588 },
 		    PIXEL_THREEQUARTERS[1] = { 0x2593 },
-		    PIXEL_HALF[1] = { 0x2592 },
-		    PIXEL_QUARTER[1] = {0x2591};
+		    PIXEL_HALF[1]          = { 0x2592 },
+		    PIXEL_QUARTER[1]       = { 0x2591 };
 }
 
 struct GPixel {
@@ -79,13 +80,74 @@ struct GPixel {
 	unsigned short int BackGround;
 };
 
-struct GVector {
-	double x, y, z;
+class GVector {
+	public:
+		double x, y, z;
+
+		GVector(double gX, double gY, double gZ) {
+			x = gX;
+			y = gY;
+			z = gZ;
+		}
+
+		void add(GVector v2) {
+			x += v2.x;
+			y += v2.y;
+			z += v2.z;
+		}
+
+		void sub(GVector v2) {
+			x -= v2.x;
+			y -= v2.y;
+			z -= v2.z;
+		}
+
+		void mult(GVector v2) {
+			x *= v2.x;
+			y *= v2.y;
+			z *= v2.z;
+		}
+
+		void div(GVector v2) {
+			x /= v2.x;
+			y /= v2.y;
+			z /= v2.z;
+		}
+
+		void add(double n) {
+			x += n;
+			y += n;
+			z += n;
+		}
+
+		void sub(double n) {
+			x -= n;
+			y -= n;
+			z -= n;
+		}
+
+		void mult(double n) {
+			x *= n;
+			y *= n;
+			z *= n;
+		}
+
+		void div(double n) {
+			x /= n;
+			y /= n;
+			z /= n;
+		}
 };
 
 class GEngine {
 	public:
-		GEngine(short int argFontW, short int argFontH) {
+		GEngine(short int argWidth, short int argHeight, short int argFontW, short int argFontH) {
+			width  = argWidth;
+			height = argHeight;
+
+			currentBuffer  = (GPixel*) std::malloc(width * height * sizeof(GPixel));
+			previousBuffer = (GPixel*) std::malloc(width * height * sizeof(GPixel));
+
 			Console   = GetConsoleWindow();
 			StdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -96,15 +158,17 @@ class GEngine {
 			}
 
 			setFont(argFontW, argFontH);
-			setSize();
-			disableMouseSelection();
-			initUnicode16();
-		}
-
-		void setSize() {
-			windowSize = { (short)width, (short)height };
+			
+			windowSize = { (short) width, (short) height };
 			GetWindowRect(Console, &consoleDimensions);
 			MoveWindow(Console, consoleDimensions.left, consoleDimensions.top, 1920, 1080, TRUE);
+
+			DWORD prev_mode;
+
+			GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &prev_mode);
+			SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), prev_mode & ~ENABLE_QUICK_EDIT_MODE);
+
+			_setmode(_fileno(stdout), _O_U16TEXT);
 		}
 
 		void setFont(short int argFontW, short int argFontH) {
@@ -119,17 +183,6 @@ class GEngine {
 			wcscpy_s(cf.FaceName, L"Consolas");
 			SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), 0, &cf);
 		}
-
-		void disableMouseSelection() {
-			DWORD prev_mode;
-
-			GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &prev_mode);
-			SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), prev_mode & ~ENABLE_QUICK_EDIT_MODE);
-		}
-
-		void initUnicode16() {
-			_setmode(_fileno(stdout), _O_U16TEXT);
-		};
 
 		unsigned short int getWidth() {
 			return width;
@@ -150,8 +203,8 @@ class GEngine {
 
 				start_time = std::chrono::system_clock::now();
 
-				updateFunc(elapsedTime);
 				renderFunc();
+				if (started == 1) updateFunc(elapsedTime);
 
 				COORD pos;
 				DWORD nWritten;
@@ -181,6 +234,7 @@ class GEngine {
 				pos.Y = height;
 
 				SetConsoleCursorPosition(StdOutput, pos);
+				started = 1;
 			}
 		}
 
@@ -188,28 +242,37 @@ class GEngine {
 			return (angle * 3.1415926 / 180);
 		}
 
-		void printPixel(short int x, short int y, unsigned short int color[]) {
+		void printPixel(short int x, short int y, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
 			if (x >= 0 && y >= 0 && x < width && y < height) {
-				currentBuffer[y * width + x].character[0] = GPixelTypes::PIXEL_SOLID[0];
+				currentBuffer[y * width + x].character[0] = pixelType;
 				currentBuffer[y * width + x].BackGround   = color[1];
 				currentBuffer[y * width + x].ForeGround   = color[0];
 			}
 		}
 
-		void rectangle(short int x, short int y, unsigned short int w, unsigned short int h, unsigned short int color[]) {
+		void rectangleFill(short int x, short int y, unsigned short int w, unsigned short int h, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
 			for (short int cx = x; cx < x + w; cx++) {
 				for (short int cy = y; cy < y + h; cy++) {
-					printPixel(cx, cy, color);
+					printPixel(cx, cy, color, pixelType);
 				}
 			}
 		}
 
-		void square(short int x, short int y, unsigned short int s, unsigned short int color[]) {
-			rectangle(x, y, s, s, color);
+		void rectangleOutline(short int x, short int y, unsigned short int w, unsigned short int h, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
+			for (short int cx = x; cx < x + w; cx++) { printPixel(cx, y, color, pixelType); printPixel(cx, y + h, color, pixelType); }
+			for (short int cy = y; cy < y + h + 1; cy++) { printPixel(x, cy, color, pixelType); printPixel(x + w, cy, color, pixelType); }
 		}
 
-		void background(unsigned short int color[]) {
-			rectangle(0, 0, width, height, color);
+		void squareFill(short int x, short int y, unsigned short int s, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
+			rectangleFill(x, y, s, s, color, pixelType);
+		}
+
+		void squareOutline(short int x, short int y, unsigned short int s, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
+			rectangleOutline(x, y, s, s, color, pixelType);
+		}
+
+		void background(unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
+			rectangleFill(0, 0, width, height, color, pixelType);
 		}
 
 		void clear() {
@@ -220,7 +283,7 @@ class GEngine {
 			}
 		}
 
-		void circleOutline(short int gX, short int gY, unsigned short int radius, unsigned short int color[]) {
+		void circleOutline(short int gX, short int gY, unsigned short int radius, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
 			short int x   = radius - 1;
 			short int y   = 0;
 			short int dx  = 1;
@@ -228,14 +291,14 @@ class GEngine {
 			short int err = dx - (radius << 1);
 
 			while (x >= y) {
-				printPixel(gX + x, gY + y, color);
-				printPixel(gX + y, gY + x, color);
-				printPixel(gX - y, gY + x, color);
-				printPixel(gX - x, gY + y, color);
-				printPixel(gX - x, gY - y, color);
-				printPixel(gX - y, gY - x, color);
-				printPixel(gX + y, gY - x, color);
-				printPixel(gX + x, gY - y, color);
+				printPixel(gX + x, gY + y, color, pixelType);
+				printPixel(gX + y, gY + x, color, pixelType);
+				printPixel(gX - y, gY + x, color, pixelType);
+				printPixel(gX - x, gY + y, color, pixelType);
+				printPixel(gX - x, gY - y, color, pixelType);
+				printPixel(gX - y, gY - x, color, pixelType);
+				printPixel(gX + y, gY - x, color, pixelType);
+				printPixel(gX + x, gY - y, color, pixelType);
 
 				if (err <= 0) {
 					y++;
@@ -249,9 +312,9 @@ class GEngine {
 			}
 		}
 
-		void circleFill(short int gX, short int gY, unsigned short int radius, unsigned short int color[]) {
+		void circleFill(short int gX, short int gY, unsigned short int radius, unsigned short int color[], wchar_t pixelType = *GPixelTypes::PIXEL_SOLID) {
 			while (radius > 0) {
-				GEngine::circleOutline(gX, gY, radius, color);
+				circleOutline(gX, gY, radius, color, pixelType);
 				radius--;
 			}
 		}
@@ -265,14 +328,24 @@ class GEngine {
 			}
 		}
 
+		unsigned short int isKeyPressed(char key) {
+			if (GetKeyState(key) & 0x8000) return 1;
+			return 0;
+		}
+
 	private:
 		HWND Console;
 		RECT consoleDimensions;
 		COORD windowSize;
 		HANDLE StdOutput;
 
-		unsigned short int width = 100, height = 100, fontW, fontH;
+		unsigned short int width, height;
+		unsigned short int fontW, fontH;
+		unsigned short int started = 0;
 
-		GPixel currentBuffer[100 * 100];
-		GPixel previousBuffer[100 * 100];
+		GPixel * currentBuffer;
+		GPixel * previousBuffer;
 };
+#else
+#error you are not on windows
+#endif
